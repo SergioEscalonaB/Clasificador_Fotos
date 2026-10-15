@@ -2,6 +2,7 @@ from typing import Optional
 from PySide6.QtCore import Qt, QRect, QSize
 from PySide6.QtGui import QPainter, QPixmap, QColor, QFont, QPen
 from PySide6.QtWidgets import QWidget, QSizePolicy
+from clasificador.ui.lucide_icons import get_lucide_pixmap
 
 
 class ImageViewer(QWidget):
@@ -74,7 +75,7 @@ class ImageViewer(QWidget):
             self._draw_message_card(
                 painter,
                 rect,
-                title="⚠️ No se pudo abrir la imagen",
+                title="No se pudo abrir la imagen",
                 subtitle=self._error_message,
                 hint="Presiona 'Saltar' (Espacio) o 'Siguiente' para continuar.",
                 is_error=True,
@@ -85,43 +86,51 @@ class ImageViewer(QWidget):
             self._draw_message_card(
                 painter,
                 rect,
-                title="📷 Visor de Fotos",
+                title="Visor de Fotos",
                 subtitle=self._placeholder_message,
                 hint="Selecciona la carpeta origen y presiona 'Cargar imágenes'.",
                 is_error=False,
             )
 
     def _draw_message_card(self, painter: QPainter, rect: QRect, title: str, subtitle: str, hint: str, is_error: bool):
-        """Dibuja una tarjeta con mensaje centrado amigable."""
-        card_width = min(500, rect.width() - 40)
-        card_height = 180
+        """Dibuja una tarjeta con mensaje centrado amigable y elegante con icono lineal Lucide."""
+        card_width = min(520, rect.width() - 40)
+        card_height = 220
         card_x = rect.x() + (rect.width() - card_width) // 2
         card_y = rect.y() + (rect.height() - card_height) // 2
 
         card_rect = QRect(card_x, card_y, card_width, card_height)
 
         # Fondo tarjeta
-        painter.setPen(QPen(QColor("#ef4444" if is_error else "#475569"), 1))
+        painter.setPen(QPen(QColor("#ef4444" if is_error else "#334155"), 1))
         painter.setBrush(QColor("#0f172a"))
-        painter.drawRoundedRect(card_rect, 10, 10)
+        painter.drawRoundedRect(card_rect, 12, 12)
+
+        # Icono vectorial Lucide en el centro superior
+        icon_name = "alert-circle" if is_error else "image"
+        icon_color = "#f87171" if is_error else "#60a5fa"
+        icon_pixmap = get_lucide_pixmap(icon_name, color=icon_color, size=36)
+        icon_x = card_x + (card_width - 36) // 2
+        icon_y = card_y + 20
+        painter.drawPixmap(icon_x, icon_y, icon_pixmap)
 
         # Título
         title_font = QFont("Segoe UI", 14, QFont.Weight.Bold)
         painter.setFont(title_font)
-        painter.setPen(QColor("#f87171" if is_error else "#e2e8f0"))
-        title_rect = QRect(card_x + 20, card_y + 20, card_width - 40, 30)
+        painter.setPen(QColor("#f87171" if is_error else "#f1f5f9"))
+        title_rect = QRect(card_x + 20, card_y + 68, card_width - 40, 28)
         painter.drawText(title_rect, Qt.AlignmentFlag.AlignCenter, title)
 
         # Subtítulo (detalle)
         sub_font = QFont("Segoe UI", 11)
         painter.setFont(sub_font)
-        painter.setPen(QColor("#cbd5e1"))
-        sub_rect = QRect(card_x + 20, card_y + 55, card_width - 40, 50)
+        painter.setPen(QColor("#94a3b8"))
+        sub_rect = QRect(card_x + 20, card_y + 102, card_width - 40, 52)
         painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, subtitle)
 
         # Consejo / Hint
         hint_font = QFont("Segoe UI", 10, QFont.Weight.Medium)
         painter.setFont(hint_font)
-        painter.setPen(QColor("#94a3b8"))
-        hint_rect = QRect(card_x + 20, card_y + 115, card_width - 40, 30)
+        painter.setPen(QColor("#64748b"))
+        hint_rect = QRect(card_x + 20, card_y + 165, card_width - 40, 28)
         painter.drawText(hint_rect, Qt.AlignmentFlag.AlignCenter, hint)

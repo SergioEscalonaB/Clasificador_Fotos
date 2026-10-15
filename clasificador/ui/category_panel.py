@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QFrame,
 )
+from clasificador.ui.lucide_icons import get_lucide_icon
 
 # Secuencia de teclas de atajo para asignar en orden
 SHORTCUT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"]
@@ -76,15 +77,21 @@ class CategoryPanel(QWidget):
         mgmt_layout = QHBoxLayout()
         mgmt_layout.setSpacing(6)
 
-        self.btn_add = QPushButton("➕ Nueva")
+        self.btn_add = QPushButton("Nueva")
+        self.btn_add.setIcon(get_lucide_icon("plus", color="#2563eb", size=16))
+        self.btn_add.setIconSize(QSize(16, 16))
         self.btn_add.setToolTip("Agregar una nueva categoría")
         self.btn_add.clicked.connect(self._on_add_category)
 
-        self.btn_rename = QPushButton("✏️ Editar")
+        self.btn_rename = QPushButton("Editar")
+        self.btn_rename.setIcon(get_lucide_icon("pencil", color="#475569", size=16))
+        self.btn_rename.setIconSize(QSize(16, 16))
         self.btn_rename.setToolTip("Renombrar una categoría existente")
         self.btn_rename.clicked.connect(self._on_rename_category)
 
-        self.btn_delete = QPushButton("🗑️ Quitar")
+        self.btn_delete = QPushButton("Quitar")
+        self.btn_delete.setIcon(get_lucide_icon("trash", color="#dc2626", size=16))
+        self.btn_delete.setIconSize(QSize(16, 16))
         self.btn_delete.setToolTip("Quitar categoría de la lista (no borra fotos)")
         self.btn_delete.clicked.connect(self._on_delete_category)
 
@@ -106,6 +113,17 @@ class CategoryPanel(QWidget):
                 item.widget().deleteLater()
 
         self._shortcut_map.clear()
+
+        if not self._categories:
+            empty_lbl = QLabel(
+                "No hay categorías definidas todavía.\n\n"
+                "Haz clic abajo en 'Nueva' para crear tus categorías de clasificación."
+            )
+            empty_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty_lbl.setStyleSheet("color: #64748b; font-size: 12px; padding: 20px;")
+            empty_lbl.setWordWrap(True)
+            self.buttons_layout.insertWidget(0, empty_lbl)
+            return
 
         for i, cat in enumerate(self._categories):
             shortcut = SHORTCUT_KEYS[i] if i < len(SHORTCUT_KEYS) else ""
@@ -180,10 +198,6 @@ class CategoryPanel(QWidget):
     def _on_delete_category(self):
         if not self._categories:
             QMessageBox.information(self, "Aviso", "No hay categorías para eliminar.")
-            return
-
-        if len(self._categories) <= 1:
-            QMessageBox.warning(self, "Aviso", "Debe mantenerse al menos una categoría.")
             return
 
         cat, ok = QInputDialog.getItem(

@@ -24,8 +24,10 @@ from PySide6.QtWidgets import (
 from clasificador.core.session_manager import SessionManager
 from clasificador.core.image_loader import load_image_with_exif
 from clasificador.core.file_scanner import format_file_size
+from clasificador.core.app_config import get_app_config, save_app_config
 from clasificador.ui.image_viewer import ImageViewer
 from clasificador.ui.category_panel import CategoryPanel
+from clasificador.ui.lucide_icons import get_lucide_icon, get_lucide_pixmap
 
 
 class MainWindow(QMainWindow):
@@ -43,6 +45,7 @@ class MainWindow(QMainWindow):
 
         self._setup_ui()
         self._setup_shortcuts()
+        self._load_saved_config()
         self._update_ui_state()
 
     def _setup_ui(self):
@@ -124,6 +127,8 @@ class MainWindow(QMainWindow):
         self.txt_source = QLineEdit()
         self.txt_source.setPlaceholderText("Selecciona la carpeta que contiene las fotos a clasificar...")
         btn_browse_src = QPushButton("Examinar...")
+        btn_browse_src.setIcon(get_lucide_icon("folder", color="#475569", size=15))
+        btn_browse_src.setIconSize(QSize(15, 15))
         btn_browse_src.clicked.connect(self._browse_source_folder)
 
         self.chk_recursive = QCheckBox("Incluir subcarpetas")
@@ -144,6 +149,8 @@ class MainWindow(QMainWindow):
         self.txt_dest = QLineEdit()
         self.txt_dest.setPlaceholderText("Selecciona la carpeta donde se crearán las subcarpetas de categorías...")
         btn_browse_dst = QPushButton("Examinar...")
+        btn_browse_dst.setIcon(get_lucide_icon("folder", color="#475569", size=15))
+        btn_browse_dst.setIconSize(QSize(15, 15))
         btn_browse_dst.clicked.connect(self._browse_dest_folder)
 
         self.chk_move = QCheckBox("Mover en vez de copiar")
@@ -154,9 +161,11 @@ class MainWindow(QMainWindow):
         )
         self.chk_move.toggled.connect(self._on_move_mode_toggled)
 
-        self.btn_start = QPushButton("▶ Cargar imágenes / Iniciar")
+        self.btn_start = QPushButton("Cargar imágenes / Iniciar")
         self.btn_start.setObjectName("primaryButton")
         self.btn_start.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_start.setIcon(get_lucide_icon("play", color="#ffffff", size=15))
+        self.btn_start.setIconSize(QSize(15, 15))
         self.btn_start.clicked.connect(self._start_session)
 
         row2.addWidget(lbl_dst)
@@ -196,21 +205,29 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
 
-        self.btn_prev = QPushButton("◀ Anterior (←)")
+        self.btn_prev = QPushButton("Anterior (Izq)")
+        self.btn_prev.setIcon(get_lucide_icon("chevron-left", color="#475569", size=16))
+        self.btn_prev.setIconSize(QSize(16, 16))
         self.btn_prev.setToolTip("Ir a la imagen anterior")
         self.btn_prev.clicked.connect(self._on_go_previous)
 
-        self.btn_next = QPushButton("Siguiente (→) ▶")
+        self.btn_next = QPushButton("Siguiente (Der)")
+        self.btn_next.setIcon(get_lucide_icon("chevron-right", color="#475569", size=16))
+        self.btn_next.setIconSize(QSize(16, 16))
         self.btn_next.setToolTip("Ir a la imagen siguiente sin clasificar")
         self.btn_next.clicked.connect(self._on_go_next)
 
-        self.btn_skip = QPushButton("⏩ Saltar imagen (Espacio)")
+        self.btn_skip = QPushButton("Saltar (Espacio)")
         self.btn_skip.setObjectName("skipButton")
+        self.btn_skip.setIcon(get_lucide_icon("skip-forward", color="#475569", size=16))
+        self.btn_skip.setIconSize(QSize(16, 16))
         self.btn_skip.setToolTip("Omitir esta imagen y pasar a la siguiente (Espacio)")
         self.btn_skip.clicked.connect(self._on_skip)
 
-        self.btn_undo = QPushButton("↩ Deshacer última (Ctrl+Z)")
+        self.btn_undo = QPushButton("Deshacer (Ctrl+Z)")
         self.btn_undo.setObjectName("undoButton")
+        self.btn_undo.setIcon(get_lucide_icon("undo", color="#c2410c", size=16))
+        self.btn_undo.setIconSize(QSize(16, 16))
         self.btn_undo.setToolTip("Revertir la última clasificación o salto")
         self.btn_undo.clicked.connect(self._on_undo)
 
@@ -274,14 +291,20 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(4)
 
-        title = QLabel("⌨️ Atajos de Teclado")
+        title_layout = QHBoxLayout()
+        title_icon = QLabel()
+        title_icon.setPixmap(get_lucide_pixmap("keyboard", color="#475569", size=15))
+        title = QLabel("Atajos de Teclado")
         title.setStyleSheet("font-weight: bold; font-size: 12px; color: #334155;")
-        layout.addWidget(title)
+        title_layout.addWidget(title_icon)
+        title_layout.addWidget(title)
+        title_layout.addStretch()
+        layout.addLayout(title_layout)
 
         tips = [
             "• [1-9, 0, Q-P]: Clasificar en categoría",
             "• [Espacio]: Saltar imagen actual",
-            "• [← / →]: Navegar anterior / siguiente",
+            "• [Izq / Der]: Navegar anterior / siguiente",
             "• [Ctrl + Z]: Deshacer última clasificación",
         ]
         for tip in tips:
@@ -326,6 +349,46 @@ class MainWindow(QMainWindow):
 
         super().keyPressEvent(event)
 
+    # --- Persistencia de Configuración y Auto-reanudación ---
+
+    def _load_saved_config(self):
+        """Carga la configuración persistente: carpetas recientes y categorías personalizadas del usuario."""
+        config = get_app_config()
+
+        # Restaurar categorías previamente definidas por el usuario (o lista vacía)
+        saved_cats = config.get("categories")
+        if saved_cats is not None:
+            self.session.categories = list(saved_cats)
+        else:
+            self.session.categories = []
+
+        self.category_panel.set_categories(self.session.categories)
+
+        saved_src = config.get("last_source_folder", "")
+        saved_dst = config.get("last_destination_folder", "")
+        self.chk_recursive.setChecked(config.get("recursive_scan", True))
+        self.chk_move.setChecked(config.get("move_mode", False))
+
+        if saved_src and os.path.isdir(saved_src):
+            self.txt_source.setText(saved_src)
+        if saved_dst and os.path.isdir(saved_dst):
+            self.txt_dest.setText(saved_dst)
+
+        # Si ambas carpetas existen en disco, reanudar sesión automáticamente de forma inmediata
+        if saved_src and os.path.isdir(saved_src) and saved_dst and os.path.isdir(saved_dst):
+            self._start_session(auto_resume=True)
+
+    def _save_current_config(self):
+        """Guarda la configuración actual para recordar carpetas y categorías personalizadas."""
+        config = {
+            "last_source_folder": self.txt_source.text().strip(),
+            "last_destination_folder": self.txt_dest.text().strip(),
+            "recursive_scan": self.chk_recursive.isChecked(),
+            "move_mode": self.chk_move.isChecked(),
+            "categories": self.session.categories,
+        }
+        save_app_config(config)
+
     # --- Acciones de Configuración y Rutas ---
 
     def _browse_source_folder(self):
@@ -333,6 +396,7 @@ class MainWindow(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "Seleccionar Carpeta de Origen con Fotos", current)
         if folder:
             self.txt_source.setText(os.path.abspath(folder))
+            self._save_current_config()
 
     def _browse_dest_folder(self):
         current = self.txt_dest.text() or self.txt_source.text() or os.path.expanduser("~")
@@ -340,6 +404,7 @@ class MainWindow(QMainWindow):
         if folder:
             abs_folder = os.path.abspath(folder)
             self.txt_dest.setText(abs_folder)
+            self._save_current_config()
             self._check_and_prompt_resume(abs_folder)
 
     def _check_and_prompt_resume(self, dest_folder: str):
@@ -367,13 +432,14 @@ class MainWindow(QMainWindow):
                 if reply == QMessageBox.StandardButton.Yes:
                     if saved_src and not self.txt_source.text():
                         self.txt_source.setText(saved_src)
+                    self._start_session(auto_resume=True)
 
     def _on_move_mode_toggled(self, checked: bool):
         if checked:
             reply = QMessageBox.warning(
                 self,
                 "Confirmación de Seguridad - Modo Mover",
-                "⚠️ ATENCIÓN: El modo predeterminado y más seguro es COPIAR.\n\n"
+                "ATENCIÓN: El modo predeterminado y más seguro es COPIAR.\n\n"
                 "Al activar el modo MOVER, los archivos originales serán trasladados "
                 "de su carpeta de origen a la carpeta de destino.\n\n"
                 "¿Estás seguro de que deseas activar el modo Mover?",
@@ -384,21 +450,24 @@ class MainWindow(QMainWindow):
                 self.chk_move.blockSignals(True)
                 self.chk_move.setChecked(False)
                 self.chk_move.blockSignals(False)
+        self._save_current_config()
 
-    def _start_session(self):
+    def _start_session(self, auto_resume: bool = False):
         source_dir = self.txt_source.text().strip()
         dest_dir = self.txt_dest.text().strip()
 
         if not source_dir or not os.path.isdir(source_dir):
-            QMessageBox.warning(self, "Carpeta de Origen Requerida", "Por favor selecciona una carpeta de origen válida.")
+            if not auto_resume:
+                QMessageBox.warning(self, "Carpeta de Origen Requerida", "Por favor selecciona una carpeta de origen válida.")
             return
 
         if not dest_dir:
-            QMessageBox.warning(self, "Carpeta de Destino Requerida", "Por favor selecciona una carpeta de destino para organizar las fotos.")
+            if not auto_resume:
+                QMessageBox.warning(self, "Carpeta de Destino Requerida", "Por favor selecciona una carpeta de destino para organizar las fotos.")
             return
 
         # Prevenir que la carpeta destino sea idéntica a la de origen en modo mover sin cuidado
-        if os.path.abspath(source_dir) == os.path.abspath(dest_dir):
+        if os.path.abspath(source_dir) == os.path.abspath(dest_dir) and not auto_resume:
             reply = QMessageBox.question(
                 self,
                 "Carpetas Coincidentes",
@@ -419,22 +488,24 @@ class MainWindow(QMainWindow):
             destination_folder=dest_dir,
             recursive=recursive,
             move_mode=move_mode,
-            categories=self.category_panel._categories,
+            categories=self.session.categories,
             resume_existing=True,
         )
 
         if total == 0:
-            subfolder_hint = " (prueba marcando 'Incluir subcarpetas')" if not recursive else ""
-            QMessageBox.information(
-                self,
-                "Sin Imágenes",
-                f"No se encontraron imágenes compatibles en la carpeta:\n{source_dir}{subfolder_hint}\n\n"
-                "Formatos aceptados: JPG, JPEG, PNG, BMP, GIF, TIFF, WEBP.",
-            )
+            if not auto_resume:
+                subfolder_hint = " (prueba marcando 'Incluir subcarpetas')" if not recursive else ""
+                QMessageBox.information(
+                    self,
+                    "Sin Imágenes",
+                    f"No se encontraron imágenes compatibles en la carpeta:\n{source_dir}{subfolder_hint}\n\n"
+                    "Formatos aceptados: JPG, JPEG, PNG, BMP, GIF, TIFF, WEBP.",
+                )
             self.image_viewer.set_placeholder("No se encontraron imágenes en la carpeta de origen.")
         else:
             self.category_panel.set_categories(self.session.categories)
 
+        self._save_current_config()
         self._load_current_image()
         self._update_ui_state()
 
@@ -502,6 +573,7 @@ class MainWindow(QMainWindow):
         success, err = self.session.add_category(name)
         if success:
             self.category_panel.set_categories(self.session.categories)
+            self._save_current_config()
         else:
             QMessageBox.warning(self, "No se pudo agregar", err or "Error desconocido.")
 
@@ -510,6 +582,7 @@ class MainWindow(QMainWindow):
         if success:
             self.category_panel.set_categories(self.session.categories)
             self._update_info_bar()
+            self._save_current_config()
         else:
             QMessageBox.warning(self, "No se pudo renombrar", err or "Error desconocido.")
 
@@ -517,6 +590,7 @@ class MainWindow(QMainWindow):
         success, err = self.session.remove_category(name)
         if success:
             self.category_panel.set_categories(self.session.categories)
+            self._save_current_config()
         else:
             QMessageBox.warning(self, "No se pudo eliminar", err or "Error desconocido.")
 
@@ -526,7 +600,7 @@ class MainWindow(QMainWindow):
         item = self.session.get_current_item()
         if not item:
             if self.session.items:
-                self.image_viewer.set_placeholder("🎉 ¡Todas las imágenes han sido clasificadas!")
+                self.image_viewer.set_placeholder("¡Todas las imágenes han sido clasificadas!")
             else:
                 self.image_viewer.set_placeholder("Selecciona la carpeta origen y presiona 'Cargar imágenes'.")
             self._clear_info_bar()
@@ -571,7 +645,7 @@ class MainWindow(QMainWindow):
         status = item.get("status", "pending")
         if status == "classified":
             cat = item.get("category", "")
-            self.lbl_status_badge.setText(f"✓ Clasificada en: {cat}")
+            self.lbl_status_badge.setText(f"Clasificada en: {cat}")
             self.lbl_status_badge.setStyleSheet(
                 "background-color: #dcfce7; color: #166534; font-weight: bold; padding: 2px 8px; border-radius: 4px;"
             )
@@ -611,9 +685,9 @@ class MainWindow(QMainWindow):
             self.progress_bar.setValue(0)
             self.progress_bar.setFormat("0%")
 
-        self.lbl_count_classified.setText(f"✓ Clasificadas: {classified}")
-        self.lbl_count_pending.setText(f"⏳ Pendientes: {pending}")
-        self.lbl_count_skipped.setText(f"⏩ Saltadas: {skipped}")
+        self.lbl_count_classified.setText(f"Clasificadas: {classified}")
+        self.lbl_count_pending.setText(f"Pendientes: {pending}")
+        self.lbl_count_skipped.setText(f"Saltadas: {skipped}")
 
         # Habilitación de botones
         has_items = total > 0
@@ -623,6 +697,7 @@ class MainWindow(QMainWindow):
         self.btn_undo.setEnabled(stats["can_undo"])
 
     def closeEvent(self, event):
-        """Al cerrar la aplicación, guardar el progreso automáticamente."""
+        """Al cerrar la aplicación, guardar el progreso y la configuración automáticamente."""
+        self._save_current_config()
         self.session.save_progress()
         event.accept()

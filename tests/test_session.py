@@ -155,7 +155,8 @@ def test_category_management_safety(tmp_path):
     assert ok_del is True
     assert "CatB" not in session.categories
 
-    # No permitir eliminar la última categoría
+    # Permitir eliminar la categoría dejando la lista limpia
     ok_last, err_last = session.remove_category("CatNueva")
-    assert ok_last is False
-    assert "al menos una categoría" in err_last
+    assert ok_last is True
+    assert len(session.categories) == 0
+    assert err_last is None

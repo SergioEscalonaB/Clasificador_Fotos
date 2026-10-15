@@ -9,13 +9,8 @@ from clasificador.core.file_scanner import scan_images
 
 PROGRESS_FILENAME = "clasificador_progreso.json"
 
-DEFAULT_CATEGORIES = [
-    "Mami",
-    "Papi",
-    "Hermano",
-    "Obras terminadas",
-    "Otros",
-]
+DEFAULT_CATEGORIES = []
+
 
 
 class SessionManager:
@@ -412,9 +407,6 @@ class SessionManager:
         """
         if name not in self.categories:
             return False, f"La categoría '{name}' no existe."
-
-        if len(self.categories) <= 1:
-            return False, "Debe existir al menos una categoría en la lista."
 
         self.categories.remove(name)
         self.save_progress()
