@@ -3,158 +3,185 @@ Estilos visuales modernos para la interfaz en PySide6.
 Optimizado para Windows 10/11 con tipografía limpia y diseño visual equilibrado.
 """
 
-APP_STYLESHEET = """
-QMainWindow {
-    background-color: #f4f6f9;
-}
+import os
+import tempfile
 
-QWidget {
+
+def ensure_check_icon_path() -> str:
+    """
+    Garantiza la existencia de un icono SVG vectorial nítido con el 'chulo' (marca de verificación)
+    blanco para los selectores (QCheckBox) tanto en modo desarrollo como en el .exe compilado.
+    """
+    temp_dir = tempfile.gettempdir()
+    icon_path = os.path.join(temp_dir, "clasificador_check_icon.svg")
+    svg_content = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" '
+        'fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">'
+        '<polyline points="20 6 9 17 4 12"/>'
+        '</svg>'
+    )
+    try:
+        with open(icon_path, "w", encoding="utf-8") as f:
+            f.write(svg_content)
+    except Exception:
+        pass
+    return icon_path.replace("\\", "/")
+
+
+def get_app_stylesheet() -> str:
+    check_svg = ensure_check_icon_path()
+    return f"""
+QMainWindow {{
+    background-color: #f4f6f9;
+}}
+
+QWidget {{
     font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     font-size: 13px;
     color: #1e293b;
-}
+}}
 
 /* Encabezados y barras superiores */
-#headerCard {
+#headerCard {{
     background-color: #ffffff;
     border-radius: 10px;
     border: 1px solid #e2e8f0;
-}
+}}
 
-#statsCard {
+#statsCard {{
     background-color: #ffffff;
     border-radius: 10px;
     border: 1px solid #e2e8f0;
-}
+}}
 
-#categoriesCard {
+#categoriesCard {{
     background-color: #ffffff;
     border-radius: 10px;
     border: 1px solid #e2e8f0;
-}
+}}
 
-#infoBar {
+#infoBar {{
     background-color: #ffffff;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     padding: 6px 12px;
-}
+}}
 
 /* Campos de texto */
-QLineEdit {
+QLineEdit {{
     background-color: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     padding: 6px 10px;
     color: #0f172a;
-}
-QLineEdit:focus {
+}}
+QLineEdit:focus {{
     border: 1px solid #3b82f6;
     background-color: #f8fafc;
-}
-QLineEdit:disabled {
+}}
+QLineEdit:disabled {{
     background-color: #f1f5f9;
     color: #94a3b8;
-}
+}}
 
 /* Botones principales y secundarios */
-QPushButton {
+QPushButton {{
     background-color: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     padding: 6px 14px;
     font-weight: 500;
     color: #334155;
-}
-QPushButton:hover {
+}}
+QPushButton:hover {{
     background-color: #f8fafc;
     border-color: #94a3b8;
-}
-QPushButton:pressed {
+}}
+QPushButton:pressed {{
     background-color: #f1f5f9;
-}
-QPushButton:disabled {
+}}
+QPushButton:disabled {{
     background-color: #f1f5f9;
     color: #cbd5e1;
     border-color: #e2e8f0;
-}
+}}
 
 /* Botones primarios (Acción principal) */
-QPushButton#primaryButton {
+QPushButton#primaryButton {{
     background-color: #2563eb;
     color: #ffffff;
     border: none;
     font-weight: 600;
     padding: 8px 18px;
-}
-QPushButton#primaryButton:hover {
+}}
+QPushButton#primaryButton:hover {{
     background-color: #1d4ed8;
-}
-QPushButton#primaryButton:pressed {
+}}
+QPushButton#primaryButton:pressed {{
     background-color: #1e40af;
-}
+}}
 
 /* Botón Saltar */
-QPushButton#skipButton {
+QPushButton#skipButton {{
     background-color: #f1f5f9;
     color: #475569;
     border: 1px solid #cbd5e1;
     font-weight: 500;
-}
-QPushButton#skipButton:hover {
+}}
+QPushButton#skipButton:hover {{
     background-color: #e2e8f0;
     color: #1e293b;
-}
+}}
 
 /* Botón Deshacer */
-QPushButton#undoButton {
+QPushButton#undoButton {{
     background-color: #fff7ed;
     color: #c2410c;
     border: 1px solid #fed7aa;
     font-weight: 600;
-}
-QPushButton#undoButton:hover {
+}}
+QPushButton#undoButton:hover {{
     background-color: #ffedd5;
     border-color: #fdba74;
-}
-QPushButton#undoButton:disabled {
+}}
+QPushButton#undoButton:disabled {{
     background-color: #f8fafc;
     color: #cbd5e1;
     border-color: #e2e8f0;
-}
+}}
 
 /* Botones de Categorías */
-QPushButton.categoryBtn {
+QPushButton.categoryBtn {{
     background-color: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 10px 14px;
     font-size: 14px;
     font-weight: 600;
     color: #1e293b;
     text-align: left;
-}
-QPushButton.categoryBtn:hover {
+}}
+QPushButton.categoryBtn:hover {{
     background-color: #eff6ff;
     border-color: #3b82f6;
     color: #1d4ed8;
-}
-QPushButton.categoryBtn:pressed {
+}}
+QPushButton.categoryBtn:pressed {{
     background-color: #dbeafe;
-}
+}}
 
 /* Atajo visual (Badge) */
-QLabel.shortcutBadge {
+QLabel.shortcutBadge {{
     background-color: #e2e8f0;
     color: #334155;
     font-weight: bold;
     border-radius: 4px;
     padding: 2px 6px;
     font-size: 11px;
-}
+}}
 
 /* Barra de progreso */
-QProgressBar {
+QProgressBar {{
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     background-color: #e2e8f0;
@@ -163,47 +190,56 @@ QProgressBar {
     font-size: 11px;
     font-weight: 600;
     color: #1e293b;
-}
-QProgressBar::chunk {
+}}
+QProgressBar::chunk {{
     background-color: #10b981;
     border-radius: 5px;
-}
+}}
 
-/* Checkboxes */
-QCheckBox {
+/* Casillas de selección (Checkboxes) con icono visible al seleccionar */
+QCheckBox {{
     spacing: 8px;
     font-size: 13px;
     color: #334155;
-}
-QCheckBox::indicator {
-    width: 18px;
-    height: 18px;
-    border-radius: 4px;
-    border: 1px solid #cbd5e1;
+    font-weight: 500;
+}}
+QCheckBox::indicator {{
+    width: 19px;
+    height: 19px;
+    border-radius: 5px;
+    border: 1.5px solid #94a3b8;
     background-color: #ffffff;
-}
-QCheckBox::indicator:hover {
-    border-color: #3b82f6;
-}
-QCheckBox::indicator:checked {
+}}
+QCheckBox::indicator:hover {{
+    border-color: #2563eb;
+    background-color: #f8fafc;
+}}
+QCheckBox::indicator:checked {{
     background-color: #2563eb;
     border-color: #2563eb;
-    image: none;
-}
+    image: url({check_svg});
+}}
+QCheckBox::indicator:checked:hover {{
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}}
 
 /* Scroll area */
-QScrollArea {
+QScrollArea {{
     border: none;
     background-color: transparent;
-}
+}}
 
 /* Tooltips */
-QToolTip {
+QToolTip {{
     background-color: #0f172a;
     color: #f8fafc;
     border: none;
     border-radius: 4px;
     padding: 4px 8px;
     font-size: 12px;
-}
+}}
 """
+
+
+APP_STYLESHEET = get_app_stylesheet()
